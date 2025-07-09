@@ -1,0 +1,41 @@
+name: cc-project
+
+services:
+  novi_sad_db:
+    image: postgres
+    restart: always
+    # environment:
+    #   POSTGRES_PASSWORD: postgres
+    env_file:
+     - path: ./novi_sad/.env
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  db_admin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@email.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+
+  novi_sad_server:
+    build:
+      context: novi_sad
+      # dockerfile: ../novi_sad.Dockerfile
+    env_file:
+      - path: ./novi_sad/.env
+    volumes:
+      - type: bind
+        source: ./novi_sad/app/
+        target: /app
+        read_only: true
+    ports:
+      - "8000:8000"
+    depends_on:
+      - novi_sad_db
+
+volumes:
+  db-data:
