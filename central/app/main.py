@@ -1,6 +1,7 @@
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from psycopg.rows import class_row
+from psycopg.errors import UniqueViolation
 from pydantic import BaseModel, StringConstraints
 from typing import Annotated
 import uuid
@@ -11,7 +12,6 @@ app = FastAPI()
 
 class User(BaseModel):
     jmbg: Annotated[str, StringConstraints(pattern=r"^\d{13}$")]
-    # id: uuid.UUID = uuid.uuid4()
     name: str
     surname: str
     address: str
@@ -25,14 +25,20 @@ class Reservation(BaseModel):
 
 
 @app.post("/users")
-def create_user(user: User):
+async def create_user(user: User):
     with pool.connection() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO public.users(name, surname, address, jmbg) VALUES (%s, %s, %s, %s) RETURNING id;",
-            (user.name, user.surname, user.address, user.jmbg),
-        )
-        return cur.fetchone()
+        with conn.cursor() as cur:
+            try:
+                cur.execute(
+                    "INSERT INTO public.users(jmbg, name, surname, address) VALUES (%s, %s, %s, %s) RETURNING jmbg;",
+                    (user.jmbg, user.name, user.surname, user.address),
+                )
+                return cur.fetchone()
+            except UniqueViolation as e:
+                print(e.args)
+                raise HTTPException(
+                    status_code=400, detail=e.args[0].split("DETAIL:  ")[1]
+                )
 
 
 @app.get("/users")

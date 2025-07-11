@@ -1,9 +1,12 @@
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from psycopg.rows import class_row
 from pydantic import BaseModel, StringConstraints
 from typing import Annotated
 import uuid
+import httpx
+import os
+import json
 from .db import pool
 
 app = FastAPI()
@@ -11,34 +14,31 @@ app = FastAPI()
 
 class User(BaseModel):
     jmbg: Annotated[str, StringConstraints(pattern=r"^\d{13}$")]
-    # id: uuid.UUID = uuid.uuid4()
     name: str
     surname: str
     address: str
 
 
-class Reservation(BaseModel):
-    bike_id: uuid.UUID
-    user_id: uuid.UUID
-    type: str
-    date: datetime
+# class Reservation(BaseModel):
+#     bike_id: uuid.UUID
+#     user_id: uuid.UUID
+#     type: str
+#     date: datetime
 
 
 @app.post("/users")
-def create_user(user: User):
-    with pool.connection() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO public.users(name, surname, address, jmbg) VALUES (%s, %s, %s, %s) RETURNING id;",
-            (user.name, user.surname, user.address, user.jmbg),
+async def create_user(user: User):
+    async with httpx.AsyncClient() as client:
+        # print("sending request")
+        # print("nigga")
+        response = await client.post(
+            f"http://{os.environ["CENTRAL_SERVER_HOST"]}:{os.environ["CENTRAL_SERVER_PORT"]}/users",
+            json=user.model_dump(),
         )
-        return cur.fetchone()
-
-
-@app.get("/users")
-async def get_users():
-    with pool.connection() as conn:
-        cur = conn.cursor(row_factory=class_row(User))
-        cur.execute("SELECT * FROM users;")
-
-        return cur.fetchall()
+        print(response.content)
+        if response.is_error:
+            raise HTTPException(
+                status_code=400,
+                detail=json.loads(response.content)["detail"],
+            )
+        return response.content

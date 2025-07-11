@@ -54,7 +54,7 @@ services:
       PORT: ${CENTRAL_SERVER_PORT}
     volumes:
       - type: bind
-        source: ./novi_sad/app
+        source: ./central/app
         target: /app
         read_only: true
     ports:
