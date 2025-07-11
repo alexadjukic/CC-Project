@@ -1,17 +1,15 @@
 name: cc-project
 
 services:
-  novi_sad_db:
+  ns_db:
     image: postgres
     restart: always
-    # environment:
-    #   POSTGRES_PASSWORD: postgres
     env_file:
      - path: ./novi_sad/.env
     volumes:
-      - db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ns-data:/var/lib/postgresql/data
+    # ports:
+    #   - "5432:5432"
 
   db_admin:
     image: dpage/pgadmin4
@@ -21,21 +19,49 @@ services:
     ports:
       - "8080:80"
 
-  novi_sad_server:
+  ns_server:
     build:
       context: novi_sad
-      # dockerfile: ../novi_sad.Dockerfile
     env_file:
       - path: ./novi_sad/.env
+    environment:
+      PORT: ${NS_SERVER_PORT}
+      CENTRAL_SERVER_PORT: ${CENTRAL_SERVER_PORT}
     volumes:
       - type: bind
         source: ./novi_sad/app/
         target: /app
         read_only: true
     ports:
-      - "8000:8000"
+      - "${NS_SERVER_PORT}:${NS_SERVER_PORT}"
     depends_on:
-      - novi_sad_db
+      - ns_db
+
+  central_db:
+    image: postgres
+    restart: always
+    env_file:
+      - path: ./central/.env
+    volumes:
+      - central-data:/var/lib/postgresql/data
+
+  central_server:
+    build:
+      context: central
+    env_file:
+      - path: ./central/.env
+    environment:
+      PORT: ${CENTRAL_SERVER_PORT}
+    volumes:
+      - type: bind
+        source: ./novi_sad/app
+        target: /app
+        read_only: true
+    ports:
+      - "${CENTRAL_SERVER_PORT}:${CENTRAL_SERVER_PORT}"
+    depends_on:
+      - central_db
 
 volumes:
-  db-data:
+  ns-data:
+  central-data:

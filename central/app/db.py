@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-print(f"{os.environ.get("CENTRAL_SERVER_PORT", "nema")}")
 print(f"DB_HOST: {os.environ.get("DB_HOST", "NULL")}")
 print(f"PGPORT: {os.environ.get("PGPORT", "NULL")}")
 print(f"POSTGRES_USER: {os.environ.get("POSTGRES_USER", "NULL")}")
