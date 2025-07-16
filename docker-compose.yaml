@@ -5,7 +5,9 @@ services:
     image: postgres:17.5
     restart: always
     env_file:
-     - path: ./novi_sad/.env
+     - path: ./city_app/.env
+    environment:
+      PGPORT: ${NS_PGPORT}
     volumes:
       - ns-data:/var/lib/postgresql/data
     # ports:
@@ -21,15 +23,17 @@ services:
 
   ns_server:
     build:
-      context: novi_sad
+      context: city_app
     env_file:
-      - path: ./novi_sad/.env
+      - path: ./city_app/.env
     environment:
       PORT: ${NS_SERVER_PORT}
       CENTRAL_SERVER_PORT: ${CENTRAL_SERVER_PORT}
+      PGPORT: ${NS_PGPORT}
+      DB_HOST: ${NS_DB_HOST}
     volumes:
       - type: bind
-        source: ./novi_sad/app/
+        source: ./city_app/app/
         target: /app
         read_only: true
     ports:
@@ -66,21 +70,25 @@ services:
     image: postgres:17.5
     restart: always
     env_file:
-      - path: ./subotica/.env
+      - path: ./city_app/.env
+    environment:
+      PGPORT: ${SU_PGPORT}
     volumes:
       - su-data:/var/lib/postgresql/data
 
   su_server:
     build:
-      context: subotica
+      context: city_app
     env_file:
-      - path: ./subotica/.env
+      - path: ./city_app/.env
     environment:
       PORT: ${SU_SERVER_PORT}
       CENTRAL_SERVER_PORT: ${CENTRAL_SERVER_PORT}
+      PGPORT: ${SU_PGPORT}
+      DB_HOST: ${SU_DB_HOST}
     volumes:
       - type: bind
-        source: ./subotica/app
+        source: ./city_app/app
         target: /app
         read_only: true
     ports:
@@ -93,21 +101,25 @@ services:
     image: postgres:17.5
     restart: always
     env_file:
-      - path: ./kragujevac/.env
+      - path: ./city_app/.env
+    environment:
+      PGPORT: ${KG_PGPORT}
     volumes:
       - kg-data:/var/lib/postgresql/data
 
   kg_server:
     build:
-      context: kragujevac
+      context: city_app
     env_file:
-      - path: ./kragujevac/.env
+      - path: ./city_app/.env
     environment:
       PORT: ${KG_SERVER_PORT}
       CENTRAL_SERVER_PORT: ${CENTRAL_SERVER_PORT}
+      PGPORT: ${KG_PGPORT}
+      DB_HOST: ${KG_DB_HOST}
     volumes:
       - type: bind
-        source: ./kragujevac/app
+        source: ./city_app/app
         target: /app
         read_only: true
     ports:
