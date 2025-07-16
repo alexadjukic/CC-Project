@@ -2,7 +2,7 @@ name: cc-project
 
 services:
   ns_db:
-    image: postgres
+    image: postgres:17.5
     restart: always
     env_file:
      - path: ./novi_sad/.env
@@ -38,7 +38,7 @@ services:
       - ns_db
 
   central_db:
-    image: postgres
+    image: postgres:17.5
     restart: always
     env_file:
       - path: ./central/.env

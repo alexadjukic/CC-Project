@@ -19,7 +19,8 @@ with pool.connection() as conn:
 	jmbg varchar(13) PRIMARY KEY CHECK (jmbg ~ '^[[:digit:]]{13}$'),
 	name varchar(50) NOT NULL,
 	surname varchar(50) NOT NULL,
-	address varchar(150) NOT NULL
+	address varchar(150) NOT NULL,
+	bikes_rented smallint NOT NULL DEFAULT 0 CHECK (bikes_rented <= 2 AND bikes_rented >= 0)
 )"""
     )
 
