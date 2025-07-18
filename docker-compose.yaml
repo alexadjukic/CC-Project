@@ -22,8 +22,9 @@ services:
       - "8080:80"
 
   ns_server:
-    build:
-      context: city_app
+    # build:
+    #   context: city_app
+    image: alexadjukic/cc-city:1
     env_file:
       - path: ./city_app/.env
     environment:
@@ -50,8 +51,9 @@ services:
       - central-data:/var/lib/postgresql/data
 
   central_server:
-    build:
-      context: central
+    # build:
+    #   context: central
+    image: alexadjukic/cc-central:1
     env_file:
       - path: ./central/.env
     environment:
@@ -77,8 +79,9 @@ services:
       - su-data:/var/lib/postgresql/data
 
   su_server:
-    build:
-      context: city_app
+    # build:
+    #   context: city_app
+    image: alexadjukic/cc-city:1
     env_file:
       - path: ./city_app/.env
     environment:
@@ -108,8 +111,9 @@ services:
       - kg-data:/var/lib/postgresql/data
 
   kg_server:
-    build:
-      context: city_app
+    # build:
+    #   context: city_app
+    image: alexadjukic/cc-city:1
     env_file:
       - path: ./city_app/.env
     environment:
