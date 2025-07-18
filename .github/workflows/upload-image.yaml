@@ -3,9 +3,21 @@ name: Upload images
 on: workflow_dispatch
 
 jobs:
-  build-images:
-    name: Build images
+  upload-images:
+    name: Upload images
     runs-on: linux
     steps:
-      - name: Test
-        run: echo "Test"
+      - uses: actions/checkout@v4.2.2
+      - name: Docker login
+        env:
+          DOCKER_USERNAME: {{ $secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: {{ $secrets.DOCKER_PASSWORD }}
+        run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - name: Build central image
+        run: docker build ./central -t $DOCKER_USERNAME/cc-central:1
+      - name: Build city image
+        run: docker build ./city_app -t $DOCKER_USERNAME/cc-city:1
+      - name: Push central image
+        run: docker push $DOCKER_USERNAME/cc-central:1
+      - name: Push city image
+        run: docker push $DOCKER_USERNAME/cc-city:1
