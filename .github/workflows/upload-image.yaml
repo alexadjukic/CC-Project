@@ -1,0 +1,11 @@
+name: Upload images
+
+on: workflow_dispatch
+
+jobs:
+  build-images:
+    name: Build images
+    runs-on: linux
+    steps:
+      - name: Test
+        run: echo "Test"
