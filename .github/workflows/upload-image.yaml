@@ -5,7 +5,7 @@ on: workflow_dispatch
 jobs:
   upload-images:
     name: Upload images
-    runs-on: linux
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Docker login
