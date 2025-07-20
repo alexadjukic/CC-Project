@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: main-config
+data:
+  NS_SERVER_PORT: "8000"
+  CENTRAL_SERVER_PORT: "8001"
+  SU_SERVER_PORT: "8002"
+  KG_SERVER_PORT: "8003"
+  NS_PGPORT: "5432"
+  # NS_DB_HOST: "ns_db"
+  SU_PGPORT: "5434"
+  # SU_DB_HOST: "su_db"
+  KG_PGPORT: "5435"
+  # KG_DB_HOST: "kg_db"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: central-config
+data:
+  POSTGRES_PASSWORD: "postgres"
+  POSTGRES_USER: "postgres"
+  PGPORT: "5433"
+  DB_HOST: "central_db"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+  name: central-pv
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: central-class
+  accessModes:
+    - ReadWriteOnce
+  # persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /home/Aleksa/Documents/fakultet/CC/project/data
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: central-pvc
+spec:
+  volumeName: central-pv
+  storageClassName: central-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: central-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: central-server
+          image: alexadjukic/cc-central:2
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: central-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: central-config
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: PGPORT
+                  name: central-config
+            - name: DB_HOST
+              value: "localhost"
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: CENTRAL_SERVER_PORT
+                  name: main-config
+            - name: ROOT_PATH
+              value: "/central"
+        - name: central-db
+          image: postgres:17.5
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: central-volume
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: central-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: central-config
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: PGPORT
+                  name: central-config
+      volumes:
+        - name: central-volume
+          persistentVolumeClaim:
+            claimName: central-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: central-service
+spec:
+  type: ClusterIP
+  selector:
+    app: my-app
+  ports: 
+    - name: central-port
+      port: 8001
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  labels:
+    name: my-ingress
+  # annotations:
+  #   nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: bike-app.com
+      http:
+        paths:
+          # - path: /central(/|$)(.*)
+          - path: "/central"
+            # pathType: ImplementationSpecific
+            pathType: Prefix
+            backend:
+              service:
+                name: central-service
+                port:
+                  number: 8001

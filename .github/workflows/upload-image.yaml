@@ -14,10 +14,10 @@ jobs:
       - name: Docker login
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - name: Build central image
-        run: docker build ./central -t $DOCKER_USERNAME/cc-central:1
+        run: docker build ./central -t $DOCKER_USERNAME/cc-central:2
       - name: Build city image
-        run: docker build ./city_app -t $DOCKER_USERNAME/cc-city:1
+        run: docker build ./city_app -t $DOCKER_USERNAME/cc-city:2
       - name: Push central image
-        run: docker push $DOCKER_USERNAME/cc-central:1
+        run: docker push $DOCKER_USERNAME/cc-central:2
       - name: Push city image
-        run: docker push $DOCKER_USERNAME/cc-city:1
+        run: docker push $DOCKER_USERNAME/cc-city:2
