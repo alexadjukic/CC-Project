@@ -14,4 +14,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 ENV ROOT_PATH=/central
 
-ENTRYPOINT fastapi dev --host 0.0.0.0 --port ${PORT} --root-path ${ROOT_PAT}} main.py
+ENTRYPOINT fastapi dev --host 0.0.0.0 --port ${PORT} --root-path ${ROOT_PAT} main.py
