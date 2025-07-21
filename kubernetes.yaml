@@ -22,7 +22,16 @@ data:
   POSTGRES_PASSWORD: "postgres"
   POSTGRES_USER: "postgres"
   PGPORT: "5433"
-  DB_HOST: "central_db"
+  # DB_HOST: "central_db"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: city-config
+data:
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
+  CENTRAL_SERVER_HOST: central_server
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -36,7 +45,7 @@ spec:
     - ReadWriteOnce
   # persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /home/Aleksa/Documents/fakultet/CC/project/data
+    path: /central
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -52,6 +61,90 @@ spec:
     requests:
       storage: 1Gi
 ---
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+  name: ns-pv
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: ns-class
+  accessModes:
+    - ReadWriteOnce
+  # persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /ns
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ns-pvc
+spec:
+  volumeName: ns-pv
+  storageClassName: ns-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+  name: su-pv
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: su-class
+  accessModes:
+    - ReadWriteOnce
+  # persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /su
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: su-pvc
+spec:
+  volumeName: su-pv
+  storageClassName: su-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+  name: kg-pv
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: kg-class
+  accessModes:
+    - ReadWriteOnce
+  # persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /kg
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kg-pvc
+spec:
+  volumeName: kg-pv
+  storageClassName: kg-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,11 +153,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: my-app
+      app: central-app
   template:
     metadata:
       labels:
-        app: my-app
+        app: central-app
     spec:
       containers:
         - name: central-server
@@ -119,7 +212,222 @@ spec:
         - name: central-volume
           persistentVolumeClaim:
             claimName: central-pvc
-
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ns-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ns-app
+  template:
+    metadata:
+      labels:
+        app: ns-app
+    spec:
+      containers:
+        - name: ns-server
+          image: alexadjukic/cc-city:2
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: CENTRAL_SERVER_HOST
+              value: "central-service"
+            - name: CENTRAL_SERVER_PORT
+              value: "8001"
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: NS_PGPORT
+                  name: main-config
+            - name: DB_HOST
+              value: "localhost"
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: NS_SERVER_PORT
+                  name: main-config
+            - name: ROOT_PATH
+              value: "/ns"
+        - name: ns-db
+          image: postgres:17.5
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: ns-volume
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: NS_PGPORT
+                  name: main-config
+      volumes:
+        - name: ns-volume
+          persistentVolumeClaim:
+            claimName: ns-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: su-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: su-app
+  template:
+    metadata:
+      labels:
+        app: su-app
+    spec:
+      containers:
+        - name: su-server
+          image: alexadjukic/cc-city:2
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: CENTRAL_SERVER_HOST
+              value: "central-service"
+            - name: CENTRAL_SERVER_PORT
+              value: "8001"
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SU_PGPORT
+                  name: main-config
+            - name: DB_HOST
+              value: "localhost"
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SU_SERVER_PORT
+                  name: main-config
+            - name: ROOT_PATH
+              value: "/su"
+        - name: su-db
+          image: postgres:17.5
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: su-volume
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SU_PGPORT
+                  name: main-config
+      volumes:
+        - name: su-volume
+          persistentVolumeClaim:
+            claimName: su-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kg-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kg-app
+  template:
+    metadata:
+      labels:
+        app: kg-app
+    spec:
+      containers:
+        - name: kg-server
+          image: alexadjukic/cc-city:2
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: CENTRAL_SERVER_HOST
+              value: "central-service"
+            - name: CENTRAL_SERVER_PORT
+              value: "8001"
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: KG_PGPORT
+                  name: main-config
+            - name: DB_HOST
+              value: "localhost"
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: KG_SERVER_PORT
+                  name: main-config
+            - name: ROOT_PATH
+              value: "/kg"
+        - name: kg-db
+          image: postgres:17.5
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: kg-volume
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: city-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: city-config
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  key: KG_PGPORT
+                  name: main-config
+      volumes:
+        - name: kg-volume
+          persistentVolumeClaim:
+            claimName: kg-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -128,11 +436,46 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: my-app
+    app: central-app
   ports: 
     - name: central-port
       port: 8001
-
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ns-service
+spec:
+  type: ClusterIP
+  selector:
+    app: ns-app
+  ports: 
+    - name: ns-port
+      port: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: su-service
+spec:
+  type: ClusterIP
+  selector:
+    app: su-app
+  ports: 
+    - name: su-port
+      port: 8002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kg-service
+spec:
+  type: ClusterIP
+  selector:
+    app: kg-app
+  ports: 
+    - name: kg-port
+      port: 8003
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -140,19 +483,46 @@ metadata:
   name: my-ingress
   labels:
     name: my-ingress
-  # annotations:
-  #   nginx.ingress.kubernetes.io/rewrite-target: /$2
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
     - host: bike-app.com
       http:
         paths:
-          # - path: /central(/|$)(.*)
-          - path: "/central"
-            # pathType: ImplementationSpecific
-            pathType: Prefix
+          - path: /central(/|$)(.*)
+          # - path: "/central"
+            pathType: ImplementationSpecific
+            # pathType: Prefix
             backend:
               service:
                 name: central-service
                 port:
                   number: 8001
+          - path: /ns(/|$)(.*)
+          # - path: "/central"
+            pathType: ImplementationSpecific
+            # pathType: Prefix
+            backend:
+              service:
+                name: ns-service
+                port:
+                  number: 8000
+          - path: /su(/|$)(.*)
+          # - path: "/central"
+            pathType: ImplementationSpecific
+            # pathType: Prefix
+            backend:
+              service:
+                name: su-service
+                port:
+                  number: 8002
+          - path: /kg(/|$)(.*)
+          # - path: "/central"
+            pathType: ImplementationSpecific
+            # pathType: Prefix
+            backend:
+              service:
+                name: kg-service
+                port:
+                  number: 8003
